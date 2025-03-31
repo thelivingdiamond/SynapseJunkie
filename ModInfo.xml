@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<Mod
+    modName="thelivingdiamond.SynapseJunkie"
+    displayName="Synapse Junkie"
+    version="0.1.0"
+    author="thelivingdiamond"
+    dllName="thelivingdiamond.SynapseJunkie.dll"
+    hasXML="true"
+    hasLevelXML="false"
+    enableShaderCompiler="false" />
