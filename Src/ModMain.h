@@ -96,7 +96,12 @@ private:
     void OnBecomeAlien() override;
 
 private:
+    bool m_bShowGameTokenView = false;
+
     // Put private stuff here
+    void DrawMenuBar();
+
+    void DrawGameTokenViewWindow(bool* pbIsOpen);
 };
 
 extern ModMain* gMod;

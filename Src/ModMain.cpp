@@ -5,6 +5,7 @@
 #include "Prey/CryGame/IGameFramework.h"
 #include <Prey/CryGame/Game.h>
 #include <Prey/GameDll/ark/ArkListenerManager.h>
+#include <Prey/CryGame/IGameTokens.h>
 
 
 ModMain* gMod = nullptr;
@@ -65,41 +66,11 @@ void ModMain::ShutdownSystem(bool isHotUnloading)
 //---------------------------------------------------------------------------------
 void ModMain::Draw()
 {
+
+    DrawMenuBar();
+    DrawGameTokenViewWindow(&m_bShowGameTokenView);
     // Modders, please move to a method, it's just an example
-    if (ImGui::BeginMainMenuBar())
-    {
-        if (ImGui::BeginMenu("Synapse Junkie"))
-        {
-            ImGui::MenuItem("Addiction Settings");
-            ImGui::EndMenu();
-        }
 
-        ImGui::EndMainMenuBar();
-    }
-
-    if (ImGui::Begin("Synapse Junkie"))
-    {
-        static bool state = false;
-        static time_t loadTime = std::time(nullptr);
-        const char* text = !state ? "I love Neuromods" : "FUCK";
-        ArkPlayer* player = ArkPlayer::GetInstancePtr();
-        int neuromodsUsed = 0;
-        if(player != nullptr){
-            // this will be the basis for our "mental load" stat
-            neuromodsUsed = ArkPlayer::GetInstancePtr()->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
-        }
-        ImGui::Text("%s", text);
-        ImGui::Text("Load time: %lld", (long long)loadTime);
-        ImGui::Text("neuromodsUsed: %d", neuromodsUsed);
-        if (ImGui::Button("Take a hit"))
-        {
-            auto gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
-        }
-
-
-    }
-
-    ImGui::End();
 }
 
 //---------------------------------------------------------------------------------
@@ -142,7 +113,6 @@ void ModMain::OnLoadGame(ILoadGame *loadGame) {
         int randNum = 0;
         ser->Value("randomNumber", randNum);
         CryLog("Loaded random number: {}", randNum);
-
     }
 }
 
@@ -164,11 +134,96 @@ void ModMain::OnForceLoadingWithFlash() {
 }
 
 void ModMain::OnAbilityAdded(uint64_t _abilityID) {
-    CryLog("Ability added: %llu", _abilityID);
+    IGameTokenSystem* gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
+    if (gameTokenSystem == nullptr) {
+        return;
+    }
+
+    auto player = ArkPlayer::GetInstancePtr();
+    auto numberOfNeuromods = (float)player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
+
+    IGameToken* mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
+    // format the float to 6 decimal places
+    mentalLoadToken->SetValueAsString(std::to_string(numberOfNeuromods).c_str());
 }
 
 void ModMain::OnBecomeAlien() {
     CryLog("Became alien");
+}
+
+void ModMain::DrawGameTokenViewWindow(bool *pbIsOpen) {
+    if(!*pbIsOpen) return;
+
+    IGameTokenSystem* gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
+    if (gameTokenSystem == nullptr) {
+        return;
+    }
+
+    IGameToken* mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
+    IGameToken* mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
+    IGameToken* needValueToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedValue");
+    IGameToken* needStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedStage");
+    IGameToken* addictionTickRateToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.AddictionTickRate");
+
+
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha(0.8f);
+    ImGui::Begin("Game Token View", pbIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+    if(mentalLoadToken) {
+        auto value = mentalLoadToken->GetValueAsString();
+        // parse the string to a float
+        float numberOfNeuromods = std::stof(value.c_str());
+        ImGui::Text("Mental Load Value: %s", value.c_str());
+        ImGui::ProgressBar(numberOfNeuromods / 100.0f);
+    } else {
+        ImGui::Text("Mental Load Value: Not Found");
+    }
+
+    if(mentalLoadStageToken) {
+        auto value = mentalLoadStageToken->GetValueAsString();
+        ImGui::Text("Mental Load Stage: %s", value.c_str());
+    } else {
+        ImGui::Text("Mental Load Stage: Not Found");
+    }
+
+    if(needValueToken) {
+        auto value = needValueToken->GetValueAsString();
+        ImGui::Text("Need Value: %s", value.c_str());
+    } else {
+        ImGui::Text("Need Value: Not Found");
+    }
+
+    if(needStageToken) {
+        auto value = needStageToken->GetValueAsString();
+        ImGui::Text("Need Stage: %s", value.c_str());
+    } else {
+        ImGui::Text("Need Stage: Not Found");
+    }
+
+    if(addictionTickRateToken) {
+        auto value = addictionTickRateToken->GetValueAsString();
+        ImGui::Text("Addiction Tick Rate: %s", value.c_str());
+    } else {
+        ImGui::Text("Addiction Tick Rate: Not Found");
+    }
+
+    ImGui::Separator();
+
+
+    ImGui::End();
+}
+
+void ModMain::DrawMenuBar() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Synapse Junkie")) {
+            ImGui::MenuItem("Show Game Token View", nullptr, &m_bShowGameTokenView);
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
 }
 
 //---------------------------------------------------------------------------------
