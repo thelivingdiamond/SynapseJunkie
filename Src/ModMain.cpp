@@ -109,6 +109,7 @@ void ModMain::DrawDebugWindow(bool *pbIsOpen) {
     if (pPlayer != nullptr) {
         ArkTraumaBase* withdrawalTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus)GetWithdrawalStatusEnumValue());
         ArkTraumaBase* addictionTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus)GetAddictionStatusEnumValue());
+        ImGui::Text("Number of Neuromods: %d", pPlayer->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed());
         if(addictionTrauma != nullptr){
             ImGui::Text("Addiction Level: %d", addictionTrauma->m_currentLevel);
         }
@@ -237,6 +238,7 @@ void ModMain::UpdateMentalLoadStage() {
     }
 
     if (trauma->m_currentLevel != mentalLoadStage - 1) {
+        CryLog("Updating mental load stage to %d", mentalLoadStage);
         if (mentalLoadStage == 0) {
             ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus(
                     (EArkPlayerStatus) GetAddictionStatusEnumValue());
