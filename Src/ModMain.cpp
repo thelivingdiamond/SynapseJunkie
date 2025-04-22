@@ -238,7 +238,7 @@ void ModMain::UpdateMentalLoadStage() {
     }
 
     if (trauma->m_currentLevel != mentalLoadStage - 1) {
-        CryLog("Updating mental load stage to %d", mentalLoadStage);
+        CryLog("Updating mental load stage to {}", mentalLoadStage);
         if (mentalLoadStage == 0) {
             ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus(
                     (EArkPlayerStatus) GetAddictionStatusEnumValue());
