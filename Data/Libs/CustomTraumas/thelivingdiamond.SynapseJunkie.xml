@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
 <TraumaList>
     <Trauma ID="12348086275151114872" Name="NeuromodWithdrawal" Class="ArkTraumaBase" />
+    <Trauma ID="12348086275151114871" Name="NeuromodAddiction" Class="ArkTraumaBase" />
 </TraumaList>

@@ -1,0 +1,71 @@
+<modifiers
+        xmlns="https://thelivingdiamond.github.io/Chairloader/Xsd/Prey"
+        xmlns:ch="https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://thelivingdiamond.github.io/Chairloader/Xsd/Prey https://thelivingdiamond.github.io/Chairloader/Xsd/Prey/Ark/SignalSystem/Modifiers.xsd https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader/MetaAttributes.xsd">
+    <modifier
+            name="Ply_Addiction_Stage_1"
+            id="12348086275148093141">
+        <rule
+                ch:index="1000">
+            <inputFilters />
+            <outputEffects>
+                <effect
+                        signalID="3149325216914689665"
+                        scale="1" />
+            </outputEffects>
+        </rule>
+    </modifier>
+    <modifier
+            name="Ply_Addiction_Stage_2"
+            id="12348086275148093142">
+        <rule
+                ch:index="1000">
+            <inputFilters />
+            <outputEffects>
+                <effect
+                        signalID="3149325216914689665"
+                        scale="1.5" />
+            </outputEffects>
+        </rule>
+    </modifier>
+    <modifier
+            name="Ply_Addiction_Stage_3"
+            id="12348086275148093143">
+        <rule
+                ch:index="1000">
+            <inputFilters />
+            <outputEffects>
+                <effect
+                        signalID="3149325216914689665"
+                        scale="2" />
+            </outputEffects>
+        </rule>
+    </modifier>
+    <modifier
+            name="Ply_Addiction_Stage_4"
+            id="12348086275148093144">
+        <rule
+                ch:index="1000">
+            <inputFilters />
+            <outputEffects>
+                <effect
+                        signalID="3149325216914689665"
+                        scale="3" />
+            </outputEffects>
+        </rule>
+    </modifier>
+    <modifier
+            name="Ply_Addiction_Stage_5"
+            id="12348086275148093145">
+        <rule
+                ch:index="1000">
+            <inputFilters />
+            <outputEffects>
+                <effect
+                        signalID="3149325216914689665"
+                        scale="6" />
+            </outputEffects>
+        </rule>
+    </modifier>
+</modifiers>

@@ -2,7 +2,7 @@
 #include <Chairloader/ModSDK/ChairloaderModBase.h>
 #include <Prey/GameDll/ark/iface/IArkAbilityListener.h>
 
-class ModMain final : public ChairloaderModBase, IGameFrameworkListener, IArkAbilityListener
+class ModMain final : public ChairloaderModBase, IArkAbilityListener
 {
 public:
     using BaseClass = ChairloaderModBase;
@@ -70,35 +70,30 @@ public:
     //! Called after CSystem::Init, after all engine modules and mods have been initialized. Allows your mod to get interfaces from other mods.
     // virtual void Connect(const std::vector<IChairloaderMod*>& mods) override;
 
-    //---------------------------------------------------------------------------------
-    // Game Framework Listener
-    //---------------------------------------------------------------------------------
-
-    void OnPostUpdate(float) override;
-
-    void OnSaveGame(ISaveGame* saveGame) override;
-
-    void OnLoadGame(ILoadGame* loadGame) override;
-
-    void OnLevelEnd(const char* someString) override;
-
-    void OnActionEvent(const SActionEvent& event) override;
-
-    void OnPreRender() override;
-
-    void OnSavegameFileLoadedInMemory(const char* something) override;
-
-    void OnForceLoadingWithFlash() override;
-
 private:
     void OnAbilityAdded(uint64_t _abilityID) override;
 
     void OnBecomeAlien() override;
 
+    void FindStatusEnumValues();
+
     void OnTimerTick();
 
-    float GetTickMultiplier(int level);
+
+    void UpdateMentalLoadStage();
+
     int GetMentalLoadStage(int numberOfNeuromods);
+
+    void AccumulateWithdrawal(float amount);
+    void AccumulateAddiction(float amount);
+
+    EArkPlayerStatus GetWithdrawalStatusEnumValue();
+    EArkPlayerStatus GetAddictionStatusEnumValue();
+
+    static const uint64_t s_kWithdrawalTraumaId = 12348086275151114872;
+    static const uint64_t s_kAddictionTraumaId = 12348086275151114871;
+    static const uint64_t s_kWithdrawalSignalPackageId = 8109010857459426815;
+    static const uint64_t s_kAddictionSignalPackageId = 8109010857459426816;
 
 private:
     bool m_bShowGameTokenView = false;
@@ -108,10 +103,13 @@ private:
     float m_fAccumulatedTime = 0.0f;
     float m_fLastUpdateTime = 0.0f;
 
+    int m_withdrawalStatusEnumValue = -1;
+    int m_addictionStatusEnumValue = -1;
+
     // Put private stuff here
     void DrawMenuBar();
 
-    void DrawGameTokenViewWindow(bool* pbIsOpen);
+    void DrawDebugWindow(bool* pbIsOpen);
 };
 
 extern ModMain* gMod;

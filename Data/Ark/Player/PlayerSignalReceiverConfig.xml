@@ -9,5 +9,7 @@
             ID="15659330456339102400">
         <signal
                 signalID="3149325216914689665" />
+        <signal
+                signalID="3149325216914689664" />
     </SignalReceiver>
 </root>

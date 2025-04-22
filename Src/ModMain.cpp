@@ -16,7 +16,6 @@
 
 ModMain *gMod = nullptr;
 
-
 //---------------------------------------------------------------------------------
 // Mod Initialization
 //---------------------------------------------------------------------------------
@@ -40,8 +39,6 @@ void ModMain::InitGame(bool isHotReloading) {
     BaseClass::InitGame(isHotReloading);
     // Your code goes here
     g_pGame->m_pArkListenerManager->RegisterAbilityListener(this);
-    gCL->cl->GetFramework()->RegisterListener(this, "SynapseJunkie",
-                                              EFRAMEWORKLISTENERPRIORITY::FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
 }
 
@@ -51,7 +48,6 @@ void ModMain::InitGame(bool isHotReloading) {
 void ModMain::ShutdownGame(bool isHotUnloading) {
     // Unregister the listener
     g_pGame->m_pArkListenerManager->UnregisterAbilityListener(this);
-    gCL->cl->GetFramework()->UnregisterListener(this);
     // Your code goes here
     BaseClass::ShutdownGame(isHotUnloading);
 }
@@ -67,7 +63,7 @@ void ModMain::ShutdownSystem(bool isHotUnloading) {
 void ModMain::Draw() {
 
     DrawMenuBar();
-    DrawGameTokenViewWindow(&m_bShowGameTokenView);
+    DrawDebugWindow(&m_bShowGameTokenView);
     // Modders, please move to a method, it's just an example
 
 }
@@ -93,204 +89,58 @@ void ModMain::MainUpdate(unsigned updateFlags) {
     }
 }
 
-void ModMain::OnPostUpdate(float) {
-
-}
-
-// TODO: WHY DOES THIS WORK?????
-static char a = 'a';
-
-void ModMain::OnSaveGame(ISaveGame *saveGame) {
-
-    // TODO: WHY MAKE IT FROM a?
-    TSerialize *ser = saveGame->AddSection((TSerialize *) &a, "SynapseJunkie");
-
-    int randNum = rand();
-    ser->Value("randomNumber", randNum);
-    CryLog("Saved random number: {}", randNum);
-}
-
-void ModMain::OnLoadGame(ILoadGame *loadGame) {
-    if (loadGame != nullptr) {
-        if (!loadGame->HaveSection("SynapseJunkie")) {
-            return;
-        }
-
-        // TODO: WHY MAKE IT FROM a? WHY DOES THIS WORK????
-        std::unique_ptr<TSerialize> serPtr = std::make_unique<TSerialize>((ISerialize *) &a);
-        auto b = loadGame->GetSection(&serPtr, "SynapseJunkie");
-        if (b == nullptr) {
-            return;
-        }
-        TSerialize *ser = b->get();
-        int randNum = 0;
-        ser->Value("randomNumber", randNum);
-        CryLog("Loaded random number: {}", randNum);
-    }
-}
-
-void ModMain::OnLevelEnd(const char *someString) {
-
-}
-
-void ModMain::OnActionEvent(const SActionEvent &event) {
-
-}
-
-void ModMain::OnPreRender() {
-}
-
-void ModMain::OnSavegameFileLoadedInMemory(const char *something) {
-}
-
-void ModMain::OnForceLoadingWithFlash() {
-}
 
 void ModMain::OnAbilityAdded(uint64_t _abilityID) {
-    IGameTokenSystem *gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
-    if (gameTokenSystem == nullptr) {
-        return;
-    }
-
-    auto player = ArkPlayer::GetInstancePtr();
-    auto numberOfNeuromods = (float) player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
-
-    IGameToken *mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
-    IGameToken *mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
-
-    mentalLoadToken->SetValue(TFlowInputData(numberOfNeuromods));
-    int mentalLoadStage = GetMentalLoadStage(numberOfNeuromods);
-    mentalLoadStageToken->SetValue(TFlowInputData(mentalLoadStage));
-
+    UpdateMentalLoadStage();
 }
 
 void ModMain::OnBecomeAlien() {
     CryLog("Became alien");
 }
 
-void ModMain::DrawGameTokenViewWindow(bool *pbIsOpen) {
+void ModMain::DrawDebugWindow(bool *pbIsOpen) {
     if (!*pbIsOpen) return;
-
-    IGameTokenSystem *gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
-    if (gameTokenSystem == nullptr) {
-        return;
-    }
-
-
-    IGameToken *mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
-    IGameToken *mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
-    IGameToken *needValueToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedValue");
-    IGameToken *needStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedStage");
-    IGameToken *addictionTickRateToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.AddictionTickRate");
-
-
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.8f);
-    ImGui::Begin("Game Token View", pbIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Synapse Junkie Debug Menu", pbIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-    // indicators for is game started/paused
-//    gCL->cl->GetFramework()->IsGameStarted();
-//    gCL->cl->GetFramework()->IsGamePaused();
-    ImGui::Text("Game Started: %s", gCL->cl->GetFramework()->IsGameStarted() ? "true" : "false");
-    ImGui::Text("Game Paused: %s", gCL->cl->GetFramework()->IsGamePaused() ? "true" : "false");
-
-
-    ImGui::Separator();
-
-    // now we wanna display the amount of accumulated need/debuff
     auto pPlayer = ArkPlayer::GetInstancePtr();
     if (pPlayer != nullptr) {
-//        auto statusComponent = pPlayer->m_playerComponent.GetStatusComponent();
-        float amount = 0.0f;
-        for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
-            if (item.get()->m_id == 12348086275151114872) {
-                amount = item.get()->m_currentAmount;
-            }
+        ArkTraumaBase* withdrawalTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus)GetWithdrawalStatusEnumValue());
+        ArkTraumaBase* addictionTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus)GetAddictionStatusEnumValue());
+        if(addictionTrauma != nullptr){
+            ImGui::Text("Addiction Level: %d", addictionTrauma->m_currentLevel);
         }
-        ImGui::Text("Accumulated Need: %f", amount);
-        ImGui::ProgressBar(amount / 10000.0f);
-    }
-
-
-    if (mentalLoadToken) {
-        auto value = mentalLoadToken->GetValueAsString();
-        // parse the string to a float
-        float numberOfNeuromods = std::stof(value.c_str());
-        ImGui::Text("Mental Load Value: %s", value.c_str());
-        ImGui::ProgressBar(numberOfNeuromods / 75.0f);
-    } else {
-        ImGui::Text("Mental Load Value: Not Found");
-    }
-
-    if (mentalLoadStageToken) {
-        auto value = mentalLoadStageToken->GetValueAsString();
-        ImGui::Text("Mental Load Stage: %s", value.c_str());
-    } else {
-        ImGui::Text("Mental Load Stage: Not Found");
-    }
-
-    if (needValueToken) {
-        auto value = needValueToken->GetValueAsString();
-        ImGui::Text("Need Value: %s", value.c_str());
-    } else {
-        ImGui::Text("Need Value: Not Found");
-    }
-
-    if (needStageToken) {
-        auto value = needStageToken->GetValueAsString();
-        ImGui::Text("Need Stage: %s", value.c_str());
-    } else {
-        ImGui::Text("Need Stage: Not Found");
-    }
-
-    if (addictionTickRateToken) {
-        auto value = addictionTickRateToken->GetValueAsString();
-        ImGui::Text("Addiction Tick Rate: %s", value.c_str());
-    } else {
-        ImGui::Text("Addiction Tick Rate: Not Found");
+        if(withdrawalTrauma != nullptr){
+            ImGui::Text("Accumulated Withdrawal: %f", withdrawalTrauma->m_currentAmount);
+            ImGui::ProgressBar(withdrawalTrauma->m_currentAmount / withdrawalTrauma->m_maxAccumulation);
+        }
     }
 
     ImGui::Separator();
 
-    // add a button to send a signal to the player
-    if (ImGui::Button("Test Signal")) {
-        auto pArkGame = ArkGame::GetArkGame();
-        if (pArkGame != nullptr) {
-            auto pArkSignalManager = pArkGame->GetArkSignalManager();
-            int playerId = ArkPlayer::GetInstance().GetEntityId();
-            auto package = pArkSignalManager.GetPackageData(8109010857459426815);
-//            ArkSignalSystem::Package aPackage
-            pArkSignalManager.SendPackage(playerId, 0, 0, 8109010857459426815, ArkSignalSystem::CArkSignalContext(),
-                                          1.0, 0, 0, false);
-        }
+    static float addictionAmount = 0.0f;
+    ImGui::InputFloat("Addiction Amount", &addictionAmount, 0.1f, 1.0f, "%.1f");
+    if (ImGui::Button("Accumulate Addiction")) {
+        AccumulateAddiction(addictionAmount);
     }
 
-    if (ImGui::Button("Remove Our Shit")) {
-        int statusValue = 0;
-        for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
-            if (item.get()->m_id == 12348086275151114872) {
-                statusValue = (int) item.get()->m_status;
-            }
-        }
-        if (statusValue != 0) {
-            // enum futzing because it's custom
-            ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus((EArkPlayerStatus) statusValue);
-        }
+    static float withdrawalAmount = 0.0f;
+    ImGui::InputFloat("Withdrawal Amount", &withdrawalAmount, 0.1f, 1.0f, "%.1f");
+    if(ImGui::Button("Accumulate Withdrawal")) {
+        AccumulateWithdrawal(withdrawalAmount);
     }
-
-    if (ImGui::Button("Print out our status number")) {
-        for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
-
-            if (item.get()->m_id == 12348086275151114872) {
-                CryLog("Enum Value: {}", (int) item.get()->m_status);
-            }
-        }
-    }
-
 
     ImGui::Separator();
 
+    if (ImGui::Button("Remove Withdrawal Debuff")) {
+        ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus(
+                (EArkPlayerStatus) GetWithdrawalStatusEnumValue());
+    }
+    if (ImGui::Button("Re-evaluate Addiction")) {
+        UpdateMentalLoadStage();
+    }
 
     ImGui::End();
 }
@@ -298,7 +148,7 @@ void ModMain::DrawGameTokenViewWindow(bool *pbIsOpen) {
 void ModMain::DrawMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Synapse Junkie")) {
-            ImGui::MenuItem("Show Game Token View", nullptr, &m_bShowGameTokenView);
+            ImGui::MenuItem("Show Debug Menu", nullptr, &m_bShowGameTokenView);
             ImGui::EndMenu();
         }
 
@@ -307,45 +157,21 @@ void ModMain::DrawMenuBar() {
 }
 
 void ModMain::OnTimerTick() {
-    ArkGame *pArkGame = ArkGame::GetArkGame();
     ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
-    IGameTokenSystem *gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
-    if (pArkGame == nullptr || pPlayer == nullptr || gameTokenSystem == nullptr) {
+    if (pPlayer == nullptr) {
         return;
     }
 
-    IGameToken *mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
-    auto aValue = mentalLoadStageToken->GetValue();
-    int level = 0;
-    aValue.GetValueWithConversion(level);
-    if (level == 0) {
+    if (!pPlayer->m_playerComponent.m_pStatusComponent->IsStatusActive(
+            (EArkPlayerStatus) GetAddictionStatusEnumValue())) {
         return;
     }
-    auto pArkSignalManager = pArkGame->GetArkSignalManager();
-    auto tick_amount = cry_random(0.1f, 1.0f) * m_fTimerInterval * GetTickMultiplier(level);
-    pArkSignalManager.SendPackage(pPlayer->GetEntityId(), 0, 0, 8109010857459426815,
-                                  ArkSignalSystem::CArkSignalContext(), tick_amount, 0, 0, false);
+
+    //TODO: add multiplier from config for difficulty configuration
+    auto tick_amount = cry_random(0.1f, 1.0f) * 1.0 * m_fTimerInterval;
+    AccumulateWithdrawal(tick_amount);
 }
 
-float ModMain::GetTickMultiplier(int level) {
-    //TODO: load this stuff from the config
-    switch (level) {
-        case 0:
-            return 0.0f;
-        case 1:
-            return 1.0f;
-        case 2:
-            return 1.5f;
-        case 3:
-            return 2.0f;
-        case 4:
-            return 3.0f;
-        case 5:
-            return 6.0f;
-        default:
-            return 0.0f;
-    }
-}
 
 int ModMain::GetMentalLoadStage(int numberOfNeuromods) {
     //TODO: load this stuff from the config
@@ -363,6 +189,87 @@ int ModMain::GetMentalLoadStage(int numberOfNeuromods) {
         return 5;
     }
 }
+
+void ModMain::FindStatusEnumValues() {
+    if (ArkPlayer::GetInstancePtr() == nullptr) {
+        return;
+    }
+
+    for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
+        uint64_t id = item.get()->m_id;
+        int status = (int) item.get()->m_status;
+        // withdrawal
+        if (id == s_kWithdrawalTraumaId) {
+            m_withdrawalStatusEnumValue = status;
+        }
+            // addiction
+        else if (id == s_kAddictionTraumaId) {
+            m_addictionStatusEnumValue = status;
+        }
+    }
+}
+
+EArkPlayerStatus ModMain::GetAddictionStatusEnumValue() {
+    if (m_addictionStatusEnumValue == -1) {
+        FindStatusEnumValues();
+    }
+
+    return (EArkPlayerStatus)m_addictionStatusEnumValue;
+}
+
+EArkPlayerStatus ModMain::GetWithdrawalStatusEnumValue() {
+    if (m_withdrawalStatusEnumValue == -1) {
+        FindStatusEnumValues();
+    }
+
+    return (EArkPlayerStatus)m_withdrawalStatusEnumValue;
+}
+
+void ModMain::UpdateMentalLoadStage() {
+    ArkPlayer* player = ArkPlayer::GetInstancePtr();
+    int numberOfNeuromods = player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
+
+    int mentalLoadStage = GetMentalLoadStage(numberOfNeuromods);
+    ArkTraumaBase* trauma = ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus) GetAddictionStatusEnumValue());
+
+    if(trauma == nullptr) {
+        return;
+    }
+
+    if (trauma->m_currentLevel != mentalLoadStage - 1) {
+        if (mentalLoadStage == 0) {
+            ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus(
+                    (EArkPlayerStatus) GetAddictionStatusEnumValue());
+        } else {
+            trauma->Activate(mentalLoadStage - 1);
+        }
+    }
+}
+
+void ModMain::AccumulateWithdrawal(float amount) {
+    ArkGame *pArkGame = ArkGame::GetArkGame();
+    ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
+    if (pArkGame == nullptr || pPlayer == nullptr ) {
+        return;
+    }
+    auto pArkSignalManager = pArkGame->GetArkSignalManager();
+
+    pArkSignalManager.SendPackage(pPlayer->GetEntityId(), 0, 0, s_kWithdrawalSignalPackageId,
+                                  ArkSignalSystem::CArkSignalContext(), amount, 0, 0, false);
+}
+
+void ModMain::AccumulateAddiction(float amount) {
+    ArkGame *pArkGame = ArkGame::GetArkGame();
+    ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
+    if (pArkGame == nullptr || pPlayer == nullptr ) {
+        return;
+    }
+    auto pArkSignalManager = pArkGame->GetArkSignalManager();
+
+    pArkSignalManager.SendPackage(pPlayer->GetEntityId(), 0, 0, s_kAddictionSignalPackageId,
+                                  ArkSignalSystem::CArkSignalContext(), amount, 0, 0, false);
+}
+
 
 //---------------------------------------------------------------------------------
 // Mod Interfacing

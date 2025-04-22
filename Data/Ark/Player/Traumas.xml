@@ -10,17 +10,18 @@
                 Name="NeuromodWithdrawal"
                 DrainRate="0"
                 Duration="-1"
-                RemoveSignal="10641886185827734593"
+                RemoveSignal=""
                 PostEffect="17152079492909370879"
                 Label="Neuromod Withdrawal"
-                HowToRemove="You are suffering from Neuromod Withdrawal. You need to get your fix."
+                HowToRemove="You are suffering from Neuromod Withdrawal... another dose will help."
                 TraumaSFX="Play_Player_Trauma_Blindness"
                 AccumulateSignal="3149325216914689665"
                 PostEffectParam=""
                 DoesStack="false"
+                FillHudIcon="false"
                 RemoveOnDrain="false"
                 MaxAccumulation="10000"
-                SurvivalMode="true">
+                SurvivalMode="false">
             <Phases>
                 <ArkTraumaPhase
                         ch:index="1000"
@@ -86,6 +87,91 @@
                                 Modifier="1.0"
                                 IsActiveInAlternateForm="false" />
                     </StatModifiers>
+                </ArkTraumaPhase>
+            </Phases>
+        </ArkTrauma>
+        <ArkTrauma
+                ID="12348086275151114871"
+                Name="NeuromodAddiction"
+                DrainRate="0"
+                Duration="-1"
+                RemoveSignal=""
+                PostEffect="17152079492909370879"
+                Label="Neuromod Addiction"
+                HowToRemove="Repeated use of Neuromods has caused you to become addicted. There is no cure... only your next fix."
+                TraumaSFX="Play_Player_Trauma_Psychoshock"
+                AccumulateSignal="3149325216914689664"
+                PostEffectParam=""
+                FillHudIcon="false"
+                DoesStack="false"
+                RemoveOnDrain="false"
+                MaxAccumulation="1000"
+                SurvivalMode="false">
+            <Phases>
+                <ArkTraumaPhase
+                        ch:index="1000"
+                        DamageThreshold="10"
+                        Description="Stage I"
+                        HudIcon="fear">
+                    <SignalModifiers>
+                        <SignalModifier
+                                ModifierId="12348086275148093141"
+                                IsInbound="true"
+                                IsActiveInAlternateForm="true" />
+                    </SignalModifiers>
+                    <StatModifiers/>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="2000"
+                        DamageThreshold="20"
+                        Description="Stage II"
+                        HudIcon="fear">
+                    <SignalModifiers>
+                        <SignalModifier
+                                ModifierId="12348086275148093142"
+                                IsInbound="true"
+                                IsActiveInAlternateForm="true" />
+                    </SignalModifiers>
+                    <StatModifiers/>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="3000"
+                        DamageThreshold="35"
+                        Description="Stage III"
+                        HudIcon="fear">
+                    <SignalModifiers>
+                        <SignalModifier
+                                ModifierId="12348086275148093143"
+                                IsInbound="true"
+                                IsActiveInAlternateForm="true" />
+                    </SignalModifiers>
+                    <StatModifiers/>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="4000"
+                        DamageThreshold="50"
+                        Description="Stage IV"
+                        HudIcon="fear">
+                    <SignalModifiers>
+                        <SignalModifier
+                                ModifierId="12348086275148093144"
+                                IsInbound="true"
+                                IsActiveInAlternateForm="true" />
+                    </SignalModifiers>
+                    <StatModifiers/>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="5000"
+                        DamageThreshold="75"
+                        Description="Stage V"
+                        HudIcon="fear">
+                    <SignalModifiers>
+                        <SignalModifier
+                                ModifierId="12348086275148093145"
+                                IsInbound="true"
+                                IsActiveInAlternateForm="true" />
+                    </SignalModifiers>
+                    <StatModifiers/>
                 </ArkTraumaPhase>
             </Phases>
         </ArkTrauma>
