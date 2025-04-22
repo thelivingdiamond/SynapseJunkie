@@ -1,0 +1,9 @@
+<packages>
+    <package
+            name="TriggerNeuromodWithdrawal"
+            id="8109010857459426815">
+        <signal
+                signalID="3149325216914689665"
+                value="1" />
+    </package>
+</packages>

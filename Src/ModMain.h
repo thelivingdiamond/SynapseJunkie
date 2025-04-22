@@ -95,8 +95,18 @@ private:
 
     void OnBecomeAlien() override;
 
+    void OnTimerTick();
+
+    float GetTickMultiplier(int level);
+    int GetMentalLoadStage(int numberOfNeuromods);
+
 private:
     bool m_bShowGameTokenView = false;
+
+    //TODO: load this from config
+    float m_fTimerInterval = 10.0f;
+    float m_fAccumulatedTime = 0.0f;
+    float m_fLastUpdateTime = 0.0f;
 
     // Put private stuff here
     void DrawMenuBar();

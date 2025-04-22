@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<ArkTraumas
+    xmlns="https://thelivingdiamond.github.io/Chairloader/Xsd/Prey"
+    xmlns:ch="https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://thelivingdiamond.github.io/Chairloader/Xsd/Prey https://thelivingdiamond.github.io/Chairloader/Xsd/Prey/Ark/Player/Traumas.xsd https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader/MetaAttributes.xsd">
+    <Traumas>
+        <ArkTrauma
+                ID="12348086275151114872"
+                Name="NeuromodWithdrawal"
+                DrainRate="0"
+                Duration="-1"
+                RemoveSignal="10641886185827734593"
+                PostEffect="17152079492909370879"
+                Label="Neuromod Withdrawal"
+                HowToRemove="You are suffering from Neuromod Withdrawal. You need to get your fix."
+                TraumaSFX="Play_Player_Trauma_Blindness"
+                AccumulateSignal="3149325216914689665"
+                PostEffectParam=""
+                DoesStack="false"
+                RemoveOnDrain="false"
+                MaxAccumulation="10000"
+                SurvivalMode="true">
+            <Phases>
+                <ArkTraumaPhase
+                        ch:index="1000"
+                        DamageThreshold="1667"
+                        Description="Level I"
+                        HudIcon="fatigue">
+                    <SignalModifiers/>
+                    <StatModifiers>
+                        <StatModifier
+                                StatName="psiPointsReduction"
+                                Modifier="0.2"
+                                IsActiveInAlternateForm="false" />
+                    </StatModifiers>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="2000"
+                        DamageThreshold="3500"
+                        Description="Level II"
+                        HudIcon="bleeding">
+                    <SignalModifiers/>
+                    <StatModifiers>
+                        <StatModifier
+                                StatName="psiPointsReduction"
+                                Modifier="0.4"
+                                IsActiveInAlternateForm="false" />
+                    </StatModifiers>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="3000"
+                        DamageThreshold="5500"
+                        Description="Level III"
+                        HudIcon="crippled">
+                    <SignalModifiers/>
+                    <StatModifiers>
+                        <StatModifier
+                                StatName="psiPointsReduction"
+                                Modifier="0.6"
+                                IsActiveInAlternateForm="false" />
+                    </StatModifiers>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="4000"
+                        DamageThreshold="7500"
+                        Description="Level IV"
+                        HudIcon="concussion">
+                    <SignalModifiers/>
+                    <StatModifiers>
+                        <StatModifier
+                                StatName="psiPointsReduction"
+                                Modifier="0.8"
+                                IsActiveInAlternateForm="false" />
+                    </StatModifiers>
+                </ArkTraumaPhase>
+                <ArkTraumaPhase
+                        ch:index="5000"
+                        DamageThreshold="10000"
+                        Description="Level V"
+                        HudIcon="psi">
+                    <SignalModifiers/>
+                    <StatModifiers>
+                        <StatModifier
+                                StatName="psiPointsReduction"
+                                Modifier="1.0"
+                                IsActiveInAlternateForm="false" />
+                    </StatModifiers>
+                </ArkTraumaPhase>
+            </Phases>
+        </ArkTrauma>
+    </Traumas>
+</ArkTraumas>

@@ -1,0 +1,10 @@
+<signals
+        xmlns="https://thelivingdiamond.github.io/Chairloader/Xsd/Prey"
+        xmlns:ch="https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://thelivingdiamond.github.io/Chairloader/Xsd/Prey https://thelivingdiamond.github.io/Chairloader/Xsd/Prey/Ark/SignalSystem/Signals.xsd https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader https://thelivingdiamond.github.io/Chairloader/Xsd/Chairloader/MetaAttributes.xsd">
+    <signal
+            name="neuromodWithdrawalDebuff"
+            id="3149325216914689665"
+            notes=""/>
+</signals>

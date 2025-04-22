@@ -1,53 +1,54 @@
 #include "ModMain.h"
-#include "Prey/GameDll/ark/player/ArkPlayer.h"
-#include "Prey/GameDll/ark/player/ArkPlayerComponent.h"
-#include "Prey/GameDll/ark/player/ability/ArkAbilityComponent.h"
 #include "Prey/CryGame/IGameFramework.h"
-#include <Prey/CryGame/Game.h>
-#include <Prey/GameDll/ark/ArkListenerManager.h>
+#include <Prey/CryFlowGraph/IFlowSystem.h>
 #include <Prey/CryGame/IGameTokens.h>
+#include <Prey/CryGame/Game.h>
+#include <Prey/GameDll/ark/ArkGame.h>
+#include <Prey/GameDll/ark/player/ArkPlayer.h>
+#include <Prey/GameDll/ark/ArkListenerManager.h>
+#include <Prey/GameDll/ark/signalsystem/arksignalmanager.h>
+#include "Prey/GameDll/ark/player/ability/ArkAbilityComponent.h"
+#include <Prey/GameDll/ark/player/ArkPlayerSignalReceiver.h>
+#include <Prey/GameDll/ark/player/ArkPlayerStatusComponent.h>
+#include <Prey/GameDll/ark/player/ArkPlayerUIComponent.h>
+#include <Prey/GameDll/ark/player/trauma/ArkTraumaBase.h>
 
 
-ModMain* gMod = nullptr;
+ModMain *gMod = nullptr;
 
 
 //---------------------------------------------------------------------------------
 // Mod Initialization
 //---------------------------------------------------------------------------------
-void ModMain::FillModInfo(ModDllInfoEx& info)
-{
+void ModMain::FillModInfo(ModDllInfoEx &info) {
     info.modName = "thelivingdiamond.SynapseJunkie";
     info.logTag = "SynapseJunkie";
     info.supportsHotReload = true; // TODO: Add comment/wiki link
 }
 
-void ModMain::InitHooks()
-{
+void ModMain::InitHooks() {
 
 }
 
-void ModMain::InitSystem(const ModInitInfo& initInfo, ModDllInfo& dllInfo)
-{
+void ModMain::InitSystem(const ModInitInfo &initInfo, ModDllInfo &dllInfo) {
     BaseClass::InitSystem(initInfo, dllInfo);
     // Your code goes here
 
 }
 
-void ModMain::InitGame(bool isHotReloading)
-{
+void ModMain::InitGame(bool isHotReloading) {
     BaseClass::InitGame(isHotReloading);
     // Your code goes here
     g_pGame->m_pArkListenerManager->RegisterAbilityListener(this);
-    gCL->cl->GetFramework()->RegisterListener(this, "SynapseJunkie", EFRAMEWORKLISTENERPRIORITY::FRAMEWORKLISTENERPRIORITY_DEFAULT);
-
+    gCL->cl->GetFramework()->RegisterListener(this, "SynapseJunkie",
+                                              EFRAMEWORKLISTENERPRIORITY::FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
 }
 
 //---------------------------------------------------------------------------------
 // Mod Shutdown
 //---------------------------------------------------------------------------------
-void ModMain::ShutdownGame(bool isHotUnloading)
-{
+void ModMain::ShutdownGame(bool isHotUnloading) {
     // Unregister the listener
     g_pGame->m_pArkListenerManager->UnregisterAbilityListener(this);
     gCL->cl->GetFramework()->UnregisterListener(this);
@@ -55,8 +56,7 @@ void ModMain::ShutdownGame(bool isHotUnloading)
     BaseClass::ShutdownGame(isHotUnloading);
 }
 
-void ModMain::ShutdownSystem(bool isHotUnloading)
-{
+void ModMain::ShutdownSystem(bool isHotUnloading) {
     // Your code goes here
     BaseClass::ShutdownSystem(isHotUnloading);
 }
@@ -64,8 +64,7 @@ void ModMain::ShutdownSystem(bool isHotUnloading)
 //---------------------------------------------------------------------------------
 // GUI
 //---------------------------------------------------------------------------------
-void ModMain::Draw()
-{
+void ModMain::Draw() {
 
     DrawMenuBar();
     DrawGameTokenViewWindow(&m_bShowGameTokenView);
@@ -76,9 +75,22 @@ void ModMain::Draw()
 //---------------------------------------------------------------------------------
 // Main Update Loop
 //---------------------------------------------------------------------------------
-void ModMain::MainUpdate(unsigned updateFlags)
-{
+
+void ModMain::MainUpdate(unsigned updateFlags) {
+    bool started = gCL->cl->GetFramework()->IsGameStarted();
+    bool paused = gCL->cl->GetFramework()->IsGamePaused();
     // Your code goes here
+    if (!paused && started) {
+        // Do something
+        if (gEnv->pTimer != nullptr) {
+            auto delta = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_GAME);
+            m_fAccumulatedTime += delta;
+            if (m_fAccumulatedTime - m_fLastUpdateTime > m_fTimerInterval) {
+                m_fLastUpdateTime = m_fAccumulatedTime;
+                OnTimerTick();
+            }
+        }
+    }
 }
 
 void ModMain::OnPostUpdate(float) {
@@ -87,10 +99,11 @@ void ModMain::OnPostUpdate(float) {
 
 // TODO: WHY DOES THIS WORK?????
 static char a = 'a';
+
 void ModMain::OnSaveGame(ISaveGame *saveGame) {
 
     // TODO: WHY MAKE IT FROM a?
-    TSerialize *ser = saveGame->AddSection((TSerialize*)&a, "SynapseJunkie");
+    TSerialize *ser = saveGame->AddSection((TSerialize *) &a, "SynapseJunkie");
 
     int randNum = rand();
     ser->Value("randomNumber", randNum);
@@ -98,15 +111,15 @@ void ModMain::OnSaveGame(ISaveGame *saveGame) {
 }
 
 void ModMain::OnLoadGame(ILoadGame *loadGame) {
-    if(loadGame != nullptr){
-        if(!loadGame->HaveSection("SynapseJunkie")){
+    if (loadGame != nullptr) {
+        if (!loadGame->HaveSection("SynapseJunkie")) {
             return;
         }
 
         // TODO: WHY MAKE IT FROM a? WHY DOES THIS WORK????
-        std::unique_ptr<TSerialize> serPtr = std::make_unique<TSerialize>((ISerialize*)&a);
+        std::unique_ptr<TSerialize> serPtr = std::make_unique<TSerialize>((ISerialize *) &a);
         auto b = loadGame->GetSection(&serPtr, "SynapseJunkie");
-        if(b == nullptr){
+        if (b == nullptr) {
             return;
         }
         TSerialize *ser = b->get();
@@ -134,17 +147,21 @@ void ModMain::OnForceLoadingWithFlash() {
 }
 
 void ModMain::OnAbilityAdded(uint64_t _abilityID) {
-    IGameTokenSystem* gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
+    IGameTokenSystem *gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
     if (gameTokenSystem == nullptr) {
         return;
     }
 
     auto player = ArkPlayer::GetInstancePtr();
-    auto numberOfNeuromods = (float)player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
+    auto numberOfNeuromods = (float) player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
 
-    IGameToken* mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
-    // format the float to 6 decimal places
-    mentalLoadToken->SetValueAsString(std::to_string(numberOfNeuromods).c_str());
+    IGameToken *mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
+    IGameToken *mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
+
+    mentalLoadToken->SetValue(TFlowInputData(numberOfNeuromods));
+    int mentalLoadStage = GetMentalLoadStage(numberOfNeuromods);
+    mentalLoadStageToken->SetValue(TFlowInputData(mentalLoadStage));
+
 }
 
 void ModMain::OnBecomeAlien() {
@@ -152,18 +169,19 @@ void ModMain::OnBecomeAlien() {
 }
 
 void ModMain::DrawGameTokenViewWindow(bool *pbIsOpen) {
-    if(!*pbIsOpen) return;
+    if (!*pbIsOpen) return;
 
-    IGameTokenSystem* gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
+    IGameTokenSystem *gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
     if (gameTokenSystem == nullptr) {
         return;
     }
 
-    IGameToken* mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
-    IGameToken* mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
-    IGameToken* needValueToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedValue");
-    IGameToken* needStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedStage");
-    IGameToken* addictionTickRateToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.AddictionTickRate");
+
+    IGameToken *mentalLoadToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadValue");
+    IGameToken *mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
+    IGameToken *needValueToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedValue");
+    IGameToken *needStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.NeedStage");
+    IGameToken *addictionTickRateToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.AddictionTickRate");
 
 
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
@@ -171,43 +189,105 @@ void ModMain::DrawGameTokenViewWindow(bool *pbIsOpen) {
     ImGui::SetNextWindowBgAlpha(0.8f);
     ImGui::Begin("Game Token View", pbIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-    if(mentalLoadToken) {
+    // indicators for is game started/paused
+//    gCL->cl->GetFramework()->IsGameStarted();
+//    gCL->cl->GetFramework()->IsGamePaused();
+    ImGui::Text("Game Started: %s", gCL->cl->GetFramework()->IsGameStarted() ? "true" : "false");
+    ImGui::Text("Game Paused: %s", gCL->cl->GetFramework()->IsGamePaused() ? "true" : "false");
+
+
+    ImGui::Separator();
+
+    // now we wanna display the amount of accumulated need/debuff
+    auto pPlayer = ArkPlayer::GetInstancePtr();
+    if (pPlayer != nullptr) {
+//        auto statusComponent = pPlayer->m_playerComponent.GetStatusComponent();
+        float amount = 0.0f;
+        for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
+            if (item.get()->m_id == 12348086275151114872) {
+                amount = item.get()->m_currentAmount;
+            }
+        }
+        ImGui::Text("Accumulated Need: %f", amount);
+        ImGui::ProgressBar(amount / 10000.0f);
+    }
+
+
+    if (mentalLoadToken) {
         auto value = mentalLoadToken->GetValueAsString();
         // parse the string to a float
         float numberOfNeuromods = std::stof(value.c_str());
         ImGui::Text("Mental Load Value: %s", value.c_str());
-        ImGui::ProgressBar(numberOfNeuromods / 100.0f);
+        ImGui::ProgressBar(numberOfNeuromods / 75.0f);
     } else {
         ImGui::Text("Mental Load Value: Not Found");
     }
 
-    if(mentalLoadStageToken) {
+    if (mentalLoadStageToken) {
         auto value = mentalLoadStageToken->GetValueAsString();
         ImGui::Text("Mental Load Stage: %s", value.c_str());
     } else {
         ImGui::Text("Mental Load Stage: Not Found");
     }
 
-    if(needValueToken) {
+    if (needValueToken) {
         auto value = needValueToken->GetValueAsString();
         ImGui::Text("Need Value: %s", value.c_str());
     } else {
         ImGui::Text("Need Value: Not Found");
     }
 
-    if(needStageToken) {
+    if (needStageToken) {
         auto value = needStageToken->GetValueAsString();
         ImGui::Text("Need Stage: %s", value.c_str());
     } else {
         ImGui::Text("Need Stage: Not Found");
     }
 
-    if(addictionTickRateToken) {
+    if (addictionTickRateToken) {
         auto value = addictionTickRateToken->GetValueAsString();
         ImGui::Text("Addiction Tick Rate: %s", value.c_str());
     } else {
         ImGui::Text("Addiction Tick Rate: Not Found");
     }
+
+    ImGui::Separator();
+
+    // add a button to send a signal to the player
+    if (ImGui::Button("Test Signal")) {
+        auto pArkGame = ArkGame::GetArkGame();
+        if (pArkGame != nullptr) {
+            auto pArkSignalManager = pArkGame->GetArkSignalManager();
+            int playerId = ArkPlayer::GetInstance().GetEntityId();
+            auto package = pArkSignalManager.GetPackageData(8109010857459426815);
+//            ArkSignalSystem::Package aPackage
+            pArkSignalManager.SendPackage(playerId, 0, 0, 8109010857459426815, ArkSignalSystem::CArkSignalContext(),
+                                          1.0, 0, 0, false);
+        }
+    }
+
+    if (ImGui::Button("Remove Our Shit")) {
+        int statusValue = 0;
+        for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
+            if (item.get()->m_id == 12348086275151114872) {
+                statusValue = (int) item.get()->m_status;
+            }
+        }
+        if (statusValue != 0) {
+            // enum futzing because it's custom
+            ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus((EArkPlayerStatus) statusValue);
+        }
+    }
+
+    if (ImGui::Button("Print out our status number")) {
+        for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
+
+            if (item.get()->m_id == 12348086275151114872) {
+                CryLog("Enum Value: {}", (int) item.get()->m_status);
+            }
+        }
+    }
+
 
     ImGui::Separator();
 
@@ -223,6 +303,64 @@ void ModMain::DrawMenuBar() {
         }
 
         ImGui::EndMainMenuBar();
+    }
+}
+
+void ModMain::OnTimerTick() {
+    ArkGame *pArkGame = ArkGame::GetArkGame();
+    ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
+    IGameTokenSystem *gameTokenSystem = gCL->cl->GetFramework()->GetIGameTokenSystem();
+    if (pArkGame == nullptr || pPlayer == nullptr || gameTokenSystem == nullptr) {
+        return;
+    }
+
+    IGameToken *mentalLoadStageToken = gameTokenSystem->FindToken("GT_Global.SynapseJunkie.MentalLoadStage");
+    auto aValue = mentalLoadStageToken->GetValue();
+    int level = 0;
+    aValue.GetValueWithConversion(level);
+    if (level == 0) {
+        return;
+    }
+    auto pArkSignalManager = pArkGame->GetArkSignalManager();
+    auto tick_amount = cry_random(0.1f, 1.0f) * m_fTimerInterval * GetTickMultiplier(level);
+    pArkSignalManager.SendPackage(pPlayer->GetEntityId(), 0, 0, 8109010857459426815,
+                                  ArkSignalSystem::CArkSignalContext(), tick_amount, 0, 0, false);
+}
+
+float ModMain::GetTickMultiplier(int level) {
+    //TODO: load this stuff from the config
+    switch (level) {
+        case 0:
+            return 0.0f;
+        case 1:
+            return 1.0f;
+        case 2:
+            return 1.5f;
+        case 3:
+            return 2.0f;
+        case 4:
+            return 3.0f;
+        case 5:
+            return 6.0f;
+        default:
+            return 0.0f;
+    }
+}
+
+int ModMain::GetMentalLoadStage(int numberOfNeuromods) {
+    //TODO: load this stuff from the config
+    if (numberOfNeuromods < 10) {
+        return 0;
+    } else if (numberOfNeuromods < 20) {
+        return 1;
+    } else if (numberOfNeuromods < 35) {
+        return 2;
+    } else if (numberOfNeuromods < 50) {
+        return 3;
+    } else if (numberOfNeuromods < 75) {
+        return 4;
+    } else {
+        return 5;
     }
 }
 
@@ -254,15 +392,13 @@ void ModMain::Connect(const std::vector<IChairloaderMod *> &mods)
 //---------------------------------------------------------------------------------
 // Exported Functions
 //---------------------------------------------------------------------------------
-extern "C" DLL_EXPORT IChairloaderMod* ClMod_Initialize()
-{
+extern "C" DLL_EXPORT IChairloaderMod *ClMod_Initialize() {
     CRY_ASSERT(!gMod);
     gMod = new ModMain();
     return gMod;
 }
 
-extern "C" DLL_EXPORT void ClMod_Shutdown()
-{
+extern "C" DLL_EXPORT void ClMod_Shutdown() {
     CRY_ASSERT(gMod);
     delete gMod;
     gMod = nullptr;
