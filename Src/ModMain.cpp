@@ -13,6 +13,7 @@
 #include <Prey/GameDll/ark/player/ArkPlayerUIComponent.h>
 #include <Prey/GameDll/ark/player/trauma/ArkTraumaBase.h>
 
+#include <Chairloader/ConfigNode.h>
 
 ModMain *gMod = nullptr;
 
@@ -32,6 +33,7 @@ void ModMain::InitHooks() {
 void ModMain::InitSystem(const ModInitInfo &initInfo, ModDllInfo &dllInfo) {
     BaseClass::InitSystem(initInfo, dllInfo);
     // Your code goes here
+    loadConfig();
 
 }
 
@@ -39,7 +41,6 @@ void ModMain::InitGame(bool isHotReloading) {
     BaseClass::InitGame(isHotReloading);
     // Your code goes here
     g_pGame->m_pArkListenerManager->RegisterAbilityListener(this);
-
 }
 
 //---------------------------------------------------------------------------------
@@ -107,8 +108,8 @@ void ModMain::DrawDebugWindow(bool *pbIsOpen) {
 
     auto pPlayer = ArkPlayer::GetInstancePtr();
     if (pPlayer != nullptr) {
-        ArkTraumaBase* withdrawalTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus)GetWithdrawalStatusEnumValue());
-        ArkTraumaBase* addictionTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus)GetAddictionStatusEnumValue());
+        ArkTraumaBase* withdrawalTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus(GetWithdrawalStatusEnumValue());
+        ArkTraumaBase* addictionTrauma = pPlayer->m_playerComponent.m_pStatusComponent->GetTraumaForStatus(GetAddictionStatusEnumValue());
         ImGui::Text("Number of Neuromods: %d", pPlayer->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed());
         if(addictionTrauma != nullptr){
             ImGui::Text("Addiction Level: %d", addictionTrauma->m_currentLevel);
@@ -137,7 +138,7 @@ void ModMain::DrawDebugWindow(bool *pbIsOpen) {
 
     if (ImGui::Button("Remove Withdrawal Debuff")) {
         ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->RemoveStatus(
-                (EArkPlayerStatus) GetWithdrawalStatusEnumValue());
+                GetWithdrawalStatusEnumValue());
     }
     if (ImGui::Button("Re-evaluate Addiction")) {
         UpdateMentalLoadStage();
@@ -164,31 +165,49 @@ void ModMain::OnTimerTick() {
     }
 
     if (!pPlayer->m_playerComponent.m_pStatusComponent->IsStatusActive(
-            (EArkPlayerStatus) GetAddictionStatusEnumValue())) {
+            GetAddictionStatusEnumValue())) {
         return;
     }
 
-    //TODO: add multiplier from config for difficulty configuration
-    auto tick_amount = cry_random(0.1f, 1.0f) * 1.0 * m_fTimerInterval;
+    float tick_amount = cry_random<>(0.1f, 1.0f) * m_fWithdrawalTickMultiplier * m_fTimerInterval;
     AccumulateWithdrawal(tick_amount);
 }
 
-
-int ModMain::GetMentalLoadStage(int numberOfNeuromods) {
-    //TODO: load this stuff from the config
-    if (numberOfNeuromods < 10) {
-        return 0;
-    } else if (numberOfNeuromods < 20) {
-        return 1;
-    } else if (numberOfNeuromods < 35) {
-        return 2;
-    } else if (numberOfNeuromods < 50) {
-        return 3;
-    } else if (numberOfNeuromods < 75) {
-        return 4;
-    } else {
-        return 5;
+void ModMain::loadConfig() {
+    auto config = gCL->conf->getModConfig("thelivingdiamond.SynapseJunkie");
+    if (!config.exists()) {
+        CryError("Config file not found");
+        return;
     }
+
+    m_level1Threshold = config["AddictionThresholds"]["Level1"].asOr<int>(m_level1Threshold);
+    m_level2Threshold = config["AddictionThresholds"]["Level2"].asOr<int>(m_level2Threshold);
+    m_level3Threshold = config["AddictionThresholds"]["Level3"].asOr<int>(m_level3Threshold);
+    m_level4Threshold = config["AddictionThresholds"]["Level4"].asOr<int>(m_level4Threshold);
+    m_level5Threshold = config["AddictionThresholds"]["Level5"].asOr<int>(m_level5Threshold);
+
+    m_fTimerInterval = config["TimerInterval"].asOr<float>(m_fTimerInterval);
+    m_fWithdrawalTickMultiplier = config["WithdrawalTickMultiplier"].asOr<float>(m_fWithdrawalTickMultiplier);
+}
+
+
+int ModMain::GetMentalLoadStage(int numberOfNeuromods) const {
+    if (numberOfNeuromods < m_level1Threshold) {
+        return 0;
+    }
+    if (numberOfNeuromods < m_level2Threshold) {
+        return 1;
+    }
+    if (numberOfNeuromods < m_level3Threshold) {
+        return 2;
+    }
+    if (numberOfNeuromods < m_level4Threshold) {
+        return 3;
+    }
+    if (numberOfNeuromods < m_level5Threshold) {
+        return 4;
+    }
+    return 5;
 }
 
 void ModMain::FindStatusEnumValues() {
@@ -198,7 +217,7 @@ void ModMain::FindStatusEnumValues() {
 
     for (const auto &item: ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->m_statuses) {
         uint64_t id = item.get()->m_id;
-        int status = (int) item.get()->m_status;
+        int status = static_cast<int>(item.get()->m_status);
         // withdrawal
         if (id == s_kWithdrawalTraumaId) {
             m_withdrawalStatusEnumValue = status;
@@ -215,7 +234,7 @@ EArkPlayerStatus ModMain::GetAddictionStatusEnumValue() {
         FindStatusEnumValues();
     }
 
-    return (EArkPlayerStatus)m_addictionStatusEnumValue;
+    return static_cast<EArkPlayerStatus>(m_addictionStatusEnumValue);
 }
 
 EArkPlayerStatus ModMain::GetWithdrawalStatusEnumValue() {
@@ -223,14 +242,14 @@ EArkPlayerStatus ModMain::GetWithdrawalStatusEnumValue() {
         FindStatusEnumValues();
     }
 
-    return (EArkPlayerStatus)m_withdrawalStatusEnumValue;
+    return static_cast<EArkPlayerStatus>(m_withdrawalStatusEnumValue);
 }
 
 void ModMain::UpdateMentalLoadStage() {
     ArkPlayer* player = ArkPlayer::GetInstancePtr();
-    int numberOfNeuromods = player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
+    const int numberOfNeuromods = player->m_playerComponent.GetAbilityComponent().GetNumNeuromodsUsed();
 
-    int mentalLoadStage = GetMentalLoadStage(numberOfNeuromods);
+    const int mentalLoadStage = GetMentalLoadStage(numberOfNeuromods);
     ArkTraumaBase* trauma = ArkPlayer::GetInstance().m_playerComponent.m_pStatusComponent->GetTraumaForStatus((EArkPlayerStatus) GetAddictionStatusEnumValue());
 
     if(trauma == nullptr) {
@@ -248,9 +267,9 @@ void ModMain::UpdateMentalLoadStage() {
     }
 }
 
-void ModMain::AccumulateWithdrawal(float amount) {
-    ArkGame *pArkGame = ArkGame::GetArkGame();
-    ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
+void ModMain::AccumulateWithdrawal(const float amount) {
+    const ArkGame *pArkGame = ArkGame::GetArkGame();
+    const ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
     if (pArkGame == nullptr || pPlayer == nullptr ) {
         return;
     }
@@ -260,9 +279,9 @@ void ModMain::AccumulateWithdrawal(float amount) {
                                   ArkSignalSystem::CArkSignalContext(), amount, 0, 0, false);
 }
 
-void ModMain::AccumulateAddiction(float amount) {
-    ArkGame *pArkGame = ArkGame::GetArkGame();
-    ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
+void ModMain::AccumulateAddiction(const float amount) {
+    const ArkGame *pArkGame = ArkGame::GetArkGame();
+    const ArkPlayer *pPlayer = ArkPlayer::GetInstancePtr();
     if (pArkGame == nullptr || pPlayer == nullptr ) {
         return;
     }

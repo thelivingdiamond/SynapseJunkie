@@ -79,13 +79,15 @@ private:
 
     void OnTimerTick();
 
+    void loadConfig();
 
     void UpdateMentalLoadStage();
 
-    int GetMentalLoadStage(int numberOfNeuromods);
+    int GetMentalLoadStage(int numberOfNeuromods) const;
 
-    void AccumulateWithdrawal(float amount);
-    void AccumulateAddiction(float amount);
+    static void AccumulateWithdrawal(float amount);
+
+    static void AccumulateAddiction(float amount);
 
     EArkPlayerStatus GetWithdrawalStatusEnumValue();
     EArkPlayerStatus GetAddictionStatusEnumValue();
@@ -98,13 +100,19 @@ private:
 private:
     bool m_bShowGameTokenView = false;
 
-    //TODO: load this from config
+    float m_fWithdrawalTickMultiplier = 1.0f;
     float m_fTimerInterval = 10.0f;
     float m_fAccumulatedTime = 0.0f;
     float m_fLastUpdateTime = 0.0f;
 
     int m_withdrawalStatusEnumValue = -1;
     int m_addictionStatusEnumValue = -1;
+
+    int m_level1Threshold = 10;
+    int m_level2Threshold = 20;
+    int m_level3Threshold = 35;
+    int m_level4Threshold = 50;
+    int m_level5Threshold = 75;
 
     // Put private stuff here
     void DrawMenuBar();
